@@ -15,6 +15,7 @@ use crate::error::ProviderError;
 use crate::json_utils;
 use crate::wasm_compat::{WasmCompatSend, WasmCompatSync};
 use serde::{Deserialize, Serialize};
+use serde::de::DeserializeOwned;
 use std::io;
 use std::sync::Arc;
 use std::{fs, path::Path};
@@ -75,6 +76,21 @@ impl TranscriptionResponse {
 }
 
 crate::provider_response::modality_response_metadata_setters!(TranscriptionResponse);
+
+impl TranscriptionResponse {
+    /// Deserializes the provider response document into a typed shape.
+    ///
+    /// The document is whatever the provider's decoder placed on `raw`;
+    /// callers supply the type matching the provider they called, and
+    /// unknown fields are ignored by the caller's type. The method makes
+    /// no guarantee beyond the contents of `raw`, so a provider whose
+    /// decoder normalizes or drops fields changes what this returns.
+    /// Errors are deserialization errors of the caller's type against
+    /// `raw`.
+    pub fn decode_as<T: DeserializeOwned>(&self) -> serde_json::Result<T> {
+        serde_json::from_value(self.raw.clone())
+    }
+}
 
 /// Converts provider payloads into normalized transcription responses.
 /// Implementations must attribute the response to the supplied provider name.

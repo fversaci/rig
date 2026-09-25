@@ -1,7 +1,8 @@
 use rig::prelude::*;
 use rig::providers::gemini::Gemini;
 use rig::providers::openai::wire::{AZURE, GROQ, HUGGINGFACE, MISTRAL, OpenAI};
-use rig::providers::{gemini, groq, mistral, openai};
+use rig::providers::{gemini, groq, mistral, openai, openrouter};
+use rig::providers::openai::wire::OPENROUTER;
 use rig::transcription::TranscriptionRequestBuilder;
 use std::env::args;
 
@@ -25,6 +26,7 @@ async fn main() -> Result<(), anyhow::Error> {
     groq(&file_path).await?;
     huggingface(&file_path).await?;
     mistral(&file_path).await?;
+    openrouter_verbose(&file_path).await?;
 
     Ok(())
 }
@@ -76,6 +78,35 @@ async fn huggingface(file_path: &str) -> Result<(), anyhow::Error> {
         .send()
         .await?;
     println!("HuggingFace Whisper-Large-V3: {}", response.text);
+    Ok(())
+}
+
+async fn openrouter_verbose(file_path: &str) -> Result<(), anyhow::Error> {
+    if std::env::var("OPENROUTER_API_KEY").is_err() {
+        println!("Skipping OpenRouter verbose transcription: OPENROUTER_API_KEY not set");
+        return Ok(());
+    }
+    let model = OpenAI::from_env_with(&OPENROUTER)?
+        .bound()?
+        .transcription(openrouter::WHISPER_LARGE_V3_TURBO);
+    let response = TranscriptionRequestBuilder::from_file(model, file_path)?
+        .additional_params(serde_json::json!({
+            "response_format": "verbose_json",
+            "timestamp_granularities": ["segment", "word"],
+            "provider": {"options": {"azure": {"diarization": {"enabled": true}}}}
+        }))
+        .send()
+        .await?;
+    let verbose: openai::transcription::TranscriptionResponse = response.decode_as()?;
+    println!("OpenRouter verbose: {}", verbose.text);
+    if let Some(segments) = verbose.segments {
+        for segment in segments {
+            match segment.speaker {
+                Some(speaker) => println!("  [{speaker:>2}] {:.2}-{:.2}: {}", segment.start, segment.end, segment.text),
+                None => println!("  {:.2}-{:.2}: {}", segment.start, segment.end, segment.text),
+            }
+        }
+    }
     Ok(())
 }
 

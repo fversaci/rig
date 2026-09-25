@@ -13,6 +13,60 @@ pub struct TranscriptionResponse {
     /// [`transcription::TranscriptionResponse::usage`]; duration remains raw.
     #[serde(default)]
     pub usage: Option<TranscriptionUsage>,
+    /// Detected or requested language as a BCP-47 style tag, when reported.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub language: Option<String>,
+    /// Length of the transcribed audio, in seconds, when reported.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub duration: Option<f64>,
+    /// The operation the provider performed, typically `"transcribe"`.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub task: Option<String>,
+    /// Overall transcript confidence in `[0, 1]`, when reported.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub confidence: Option<f64>,
+    /// Time-aligned transcript segments, when the provider produced them.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub segments: Option<Vec<TranscriptionSegment>>,
+    /// Time-aligned transcript words, when the provider produced them.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub words: Option<Vec<TranscriptionWord>>,
+}
+
+/// A time-aligned span of the transcript. Provider extras (Whisper
+/// diagnostics, for instance) are ignored rather than failing the decode.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct TranscriptionSegment {
+    /// Segment index within the transcript, when reported.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub id: Option<u64>,
+    /// Offset from the audio start, in seconds.
+    pub start: f64,
+    /// Offset from the audio start where this segment ends, in seconds.
+    pub end: f64,
+    /// The transcribed text of this segment.
+    pub text: String,
+    /// Zero-based speaker label, when the provider diarized.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub speaker: Option<u64>,
+}
+
+/// A time-aligned word of the transcript. Provider extras are ignored rather
+/// than failing the decode.
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct TranscriptionWord {
+    /// The transcribed word.
+    pub word: String,
+    /// Offset from the audio start, in seconds.
+    pub start: f64,
+    /// Offset from the audio start where this word ends, in seconds.
+    pub end: f64,
+    /// Zero-based speaker label, when the provider diarized.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub speaker: Option<u64>,
+    /// Word confidence in `[0, 1]`, when reported.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub confidence: Option<f64>,
 }
 
 /// Duration or token accounting selected by the wire's `type` tag.
