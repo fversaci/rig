@@ -14,7 +14,10 @@
 //! ignored without it). The `provider` object forwards options to the backing
 //! speech provider, keyed by provider slug; that is the only route to
 //! provider-native features such as diarization, and it is unavailable on
-//! multipart requests, which this route does not use. A `verbose_json`
+//! multipart requests, which this route does not use. Some models reject
+//! `verbose_json` with a 400 response (for example `openai/gpt-4o-transcribe`);
+//! diarization options are best-effort and produce segments without speaker
+//! labels when the backing model cannot diarize. A `verbose_json`
 //! response decodes into
 //! [`TranscriptionResponse`](crate::providers::openai::transcription::TranscriptionResponse),
 //! whose segments and words carry optional speaker labels; the normalized

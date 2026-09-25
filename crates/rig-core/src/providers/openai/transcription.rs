@@ -46,7 +46,9 @@ pub struct TranscriptionSegment {
     pub end: f64,
     /// The transcribed text of this segment.
     pub text: String,
-    /// Zero-based speaker label, when the provider diarized.
+    /// Zero-based speaker label, when the provider diarized. Numeric labels
+    /// cover the diarizing backends on this wire; a backend emitting another
+    /// label shape leaves this unset.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub speaker: Option<u64>,
 }
